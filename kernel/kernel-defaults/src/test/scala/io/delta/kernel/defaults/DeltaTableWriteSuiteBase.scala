@@ -33,7 +33,7 @@ import io.delta.kernel.engine.Engine
 import io.delta.kernel.expressions.{Column, Literal}
 import io.delta.kernel.expressions.Literal.ofInt
 import io.delta.kernel.hook.PostCommitHook.PostCommitHookType
-import io.delta.kernel.internal.{SnapshotImpl, TableConfig, TableImpl}
+import io.delta.kernel.internal.{ScanImpl, SnapshotImpl, TableConfig, TableImpl}
 import io.delta.kernel.internal.actions.{Metadata, Protocol, SingleAction}
 import io.delta.kernel.internal.fs.{Path => DeltaPath}
 import io.delta.kernel.internal.util.{Clock, FileNames, VectorUtils}
@@ -576,6 +576,20 @@ trait DeltaTableWriteSuiteBase extends AnyFunSuite with TestUtils {
         .anyMatch(hook => hook.getType == PostCommitHookType.CHECKPOINT) === isReadyForCheckpoint)
   }
 
+  def collectStatsFromAddFiles(engine: Engine, path: String): Seq[String] = {
+    val snapshot = Table.forPath(engine, path).getLatestSnapshot(engine)
+    val scan = snapshot.getScanBuilder.build()
+    val scanFiles = scan.asInstanceOf[ScanImpl].getScanFiles(engine, true)
+
+    scanFiles.asScala.toList.flatMap { scanFile =>
+      scanFile.getRows.asScala.toList.flatMap { row =>
+        val add = row.getStruct(row.getSchema.indexOf("add"))
+        val idx = add.getSchema.indexOf("stats")
+        if (idx >= 0 && !add.isNullAt(idx)) List(add.getString(idx)) else Nil
+      }
+    }
+  }
+
   /**
    * Commit transaction, all child suites should use this instead of txn.commit
    * directly and could override it for specific test cases (e.g. commit and write CRC).
@@ -604,5 +618,15 @@ trait DeltaTableWriteSuiteBase extends AnyFunSuite with TestUtils {
           emptyMap(),
           emptyMap()))
       } else Optional.empty())
+  }
+
+  protected def assertCommitResultHasClusteringCols(
+      commitResult: TransactionCommitResult,
+      expectedClusteringCols: Seq[Column]): Unit = {
+    val actualClusteringCols = commitResult.getTransactionReport.getClusteringColumns.asScala
+
+    assert(
+      actualClusteringCols === expectedClusteringCols,
+      s"Expected clustering columns: $expectedClusteringCols, but got: $actualClusteringCols")
   }
 }

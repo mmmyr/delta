@@ -19,8 +19,21 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import java.util.Optional;
 
 /** Stores the metrics results for a {@link SnapshotReport} */
-@JsonPropertyOrder({"timestampToVersionResolutionDurationNs", "loadInitialDeltaActionsDurationNs"})
+@JsonPropertyOrder({
+  "loadSnapshotTotalDurationNs",
+  "timestampToVersionResolutionDurationNs",
+  "loadInitialDeltaActionsDurationNs",
+  "timeToBuildLogSegmentForVersionNs",
+  "durationToGetCrcInfoNs"
+})
 public interface SnapshotMetricsResult {
+
+  /**
+   * @return the total duration (ns) to load the snapshot, including all steps such as resolving
+   *     timestamp to version, LISTing the _delta_log, building the log segment, and determining the
+   *     latest protocol and metadata.
+   */
+  long getLoadSnapshotTotalDurationNs();
 
   /**
    * @return the duration (ns) to resolve the provided timestamp to a table version for timestamp
@@ -33,4 +46,16 @@ public interface SnapshotMetricsResult {
    *     protocol and metadata). 0 if snapshot construction fails before log replay.
    */
   long getLoadInitialDeltaActionsDurationNs();
+
+  /**
+   * @return the duration (ns) to build the log segment for the specified version during snapshot
+   *     construction. 0 if snapshot construction fails before this step.
+   */
+  long getTimeToBuildLogSegmentForVersionNs();
+
+  /**
+   * @return the duration (ns) to get CRC information during snapshot construction. 0 if snapshot
+   *     construction fails before this step or if CRC is not read in loading snapshot.
+   */
+  long getDurationToGetCrcInfoNs();
 }

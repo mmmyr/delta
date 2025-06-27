@@ -592,6 +592,15 @@ trait DeltaSQLConfBase {
       .booleanConf
       .createWithDefault(false)
 
+  val DELTA_MERGE_SCHEMA_EVOLUTION_FIX_NESTED_STRUCT_ALIGNMENT =
+    buildConf("schemaEvolution.merge.fixNestedStructAlignment")
+      .internal()
+      .doc("Internal flag covering a fix for a regression in schema evolution inside nested " +
+        "structs in MERGE. Disabling this fix may cause MERGE operations to fail when a new " +
+        "field is added to a struct that is omitted in at least one MATCHED clause.")
+      .booleanConf
+      .createWithDefault(true)
+
   val DELTA_SCHEMA_TYPE_CHECK =
     buildConf("schema.typeCheck.enabled")
       .doc(
@@ -703,6 +712,16 @@ trait DeltaSQLConfBase {
   //////////////////////////////////////////////
   // DynamoDB Commit Coordinator-specific configs end
   /////////////////////////////////////////////
+
+  val IN_COMMIT_TIMESTAMP_RETAIN_ENABLEMENT_INFO_FIX_ENABLED =
+    buildConf("inCommitTimestamp.retainEnablementInfoFix.enabled")
+      .internal()
+      .doc("When disabled, Delta can end up dropping " +
+        s"inCommitTimestampEnablementVersion and inCommitTimestampEnablementTimestamp " +
+        s"during a REPLACE or CLONE command. This accidental removal of these " +
+        s"properties can result in failures on time travel queries.")
+      .booleanConf
+      .createWithDefault(true)
 
   val DELTA_UPDATE_CATALOG_LONG_FIELD_TRUNCATION_THRESHOLD =
     buildConf("catalog.update.longFieldTruncationThreshold")
@@ -858,6 +877,32 @@ trait DeltaSQLConfBase {
            |${FileSourceOptions.IGNORE_MISSING_FILES} are enabled on the source.
            |This is done so to prevent irrecoverable data loss or unexpected results.
            |""".stripMargin)
+      .booleanConf
+      .createWithDefault(true)
+
+  val MERGE_MATERIALIZE_CACHED_SOURCE =
+    buildConf("merge.materializeCachedSource")
+      .internal()
+      .doc(
+        """
+          |When enabled, materialize the source in MERGE if it is cached (e.g. via df.cache()). This
+          |prevents incorrect results due to query caching not pinning the version of cached Delta
+          |tables.
+          |""".stripMargin)
+      .booleanConf
+      .createWithDefault(true)
+
+  val MERGE_FAIL_SOURCE_CACHED_AFTER_MATERIALIZATION =
+    buildConf("merge.failSourceCachedAfterMaterialization")
+      .internal()
+      .doc(
+        """
+          |Enables a check that fails the MERGE operation if the source was cached (using
+          |df.cache()) after the source materialization phase. Query caching doesn't pin the version
+          |of Delta tables and we should materialize cached source plans. In rare cases, the source
+          |might get cached after the decision to materialize, which could lead to incorrect results
+          |if we let the operation succeed.
+          |""".stripMargin)
       .booleanConf
       .createWithDefault(true)
 
@@ -1309,6 +1354,29 @@ trait DeltaSQLConfBase {
       .booleanConf
       .createWithDefault(true)
 
+  object AllowAutomaticWideningMode extends Enumeration {
+    val NEVER, SAME_FAMILY_TYPE, ALWAYS = Value
+
+    def fromConf(conf: SQLConf): Value =
+      withName(conf.getConf(DELTA_ALLOW_AUTOMATIC_WIDENING))
+
+    def default: Value =
+      withName(DELTA_ALLOW_AUTOMATIC_WIDENING.defaultValueString)
+  }
+
+  val DELTA_ALLOW_AUTOMATIC_WIDENING =
+    buildConf("typeWidening.allowAutomaticWidening")
+      .doc("Controls the scope of enabled widening conversions in automatic schema widening " +
+        "during schema evolution. This flag is guarded by the flag 'delta.enableTypeWidening'" +
+        "All supported widenings are enabled with 'always' selected, which allows some " +
+        "conversions between integer types and floating numbers. The value 'same_family_type' " +
+        "fallbacks to the default behavior of the guarding flag. 'never' allows no widenings.")
+      .internal()
+      .stringConf
+      .transform(_.toUpperCase(Locale.ROOT))
+      .checkValues(AllowAutomaticWideningMode.values.map(_.toString))
+      .createWithDefault(AllowAutomaticWideningMode.SAME_FAMILY_TYPE.toString)
+
   val DELTA_TYPE_WIDENING_ENABLE_STREAMING_SCHEMA_TRACKING =
     buildConf("typeWidening.enableStreamingSchemaTracking")
       .doc("Whether to enable schema tracking when streaming from a Delta source that had a " +
@@ -1685,6 +1753,16 @@ trait DeltaSQLConfBase {
       .transform(_.toLowerCase(Locale.ROOT))
       .checkValues(NonDeterministicPredicateWidening.list)
       .createWithDefault(NonDeterministicPredicateWidening.ON)
+
+  val DELTA_CONFLICT_DETECTION_ALLOW_REPLACE_TABLE_TO_REMOVE_NEW_DOMAIN_METADATA =
+    buildConf("conflictDetection.allowReplaceTableToRemoveNewDomainMetadata")
+      .doc("Whether to allow removing new domain metadatas from concurrent transactions during " +
+        "conflict resolution for a REPLACE TABLE operation. Note that this flag applies only " +
+        "to metadata domains where the table snapshot read by the REPLACE TABLE command did " +
+        "not contain a domain metadata of the same domain.")
+      .internal()
+      .booleanConf
+      .createWithDefault(true)
 
   val DELTA_UNIFORM_ICEBERG_SYNC_CONVERT_ENABLED =
     buildConf("uniform.iceberg.sync.convert.enabled")
@@ -2265,6 +2343,17 @@ trait DeltaSQLConfBase {
           |with the data post the overwrite, enabling better user experience when, for example,
           |the column mapping table is being continuously scanned in a streaming query, the analyzed
           |table schema will still be readable after the table is overwritten.
+          |""".stripMargin)
+      .booleanConf
+      .createWithDefault(true)
+
+  val REUSE_COLUMN_METADATA_DURING_REPLACE_TABLE =
+    buildConf("columnMapping.reuseColumnMetadataDuringReplace")
+      .internal()
+      .doc(
+        """
+          |If enabled, when a column mapping table is replaced, the new schema will reuse as many
+          |old schema's column mapping metadata (field id and physical name) as possible.
           |""".stripMargin)
       .booleanConf
       .createWithDefault(true)
