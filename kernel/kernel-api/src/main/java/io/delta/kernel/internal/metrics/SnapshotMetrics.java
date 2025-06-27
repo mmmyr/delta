@@ -28,17 +28,31 @@ import java.util.Optional;
  */
 public class SnapshotMetrics {
 
+  public final Timer loadSnapshotTotalTimer = new Timer();
+
   public final Timer timestampToVersionResolutionTimer = new Timer();
 
   public final Timer loadInitialDeltaActionsTimer = new Timer();
 
+  public final Timer timeToBuildLogSegmentForVersionTimer = new Timer();
+
+  public final Timer durationToGetCrcInfoTimer = new Timer();
+
   public SnapshotMetricsResult captureSnapshotMetricsResult() {
     return new SnapshotMetricsResult() {
-
+      final long loadSnapshotTotalDurationResult = loadSnapshotTotalTimer.totalDurationNs();
       final Optional<Long> timestampToVersionResolutionDurationResult =
           timestampToVersionResolutionTimer.totalDurationIfRecorded();
       final long loadInitialDeltaActionsDurationResult =
           loadInitialDeltaActionsTimer.totalDurationNs();
+      final long timeToBuildLogSegmentForVersionDurationResult =
+          timeToBuildLogSegmentForVersionTimer.totalDurationNs();
+      final long durationToGetCrcInfoDurationResult = durationToGetCrcInfoTimer.totalDurationNs();
+
+      @Override
+      public long getLoadSnapshotTotalDurationNs() {
+        return loadSnapshotTotalDurationResult;
+      }
 
       @Override
       public Optional<Long> getTimestampToVersionResolutionDurationNs() {
@@ -49,14 +63,32 @@ public class SnapshotMetrics {
       public long getLoadInitialDeltaActionsDurationNs() {
         return loadInitialDeltaActionsDurationResult;
       }
+
+      @Override
+      public long getTimeToBuildLogSegmentForVersionNs() {
+        return timeToBuildLogSegmentForVersionDurationResult;
+      }
+
+      @Override
+      public long getDurationToGetCrcInfoNs() {
+        return durationToGetCrcInfoDurationResult;
+      }
     };
   }
 
   @Override
   public String toString() {
     return String.format(
-        "SnapshotMetrics(timestampToVersionResolutionTimer=%s, "
-            + "loadInitialDeltaActionsTimer=%s)",
-        timestampToVersionResolutionTimer, loadInitialDeltaActionsTimer);
+        "SnapshotMetrics("
+            + "loadSnapshotTotalTimer=%s,"
+            + "timestampToVersionResolutionTimer=%s, "
+            + "loadInitialDeltaActionsTimer=%s, "
+            + "timeToBuildLogSegmentForVersionTimer=%s, "
+            + "durationToGetCrcInfoTimer=%s)",
+        loadSnapshotTotalTimer,
+        timestampToVersionResolutionTimer,
+        loadInitialDeltaActionsTimer,
+        timeToBuildLogSegmentForVersionTimer,
+        durationToGetCrcInfoTimer);
   }
 }

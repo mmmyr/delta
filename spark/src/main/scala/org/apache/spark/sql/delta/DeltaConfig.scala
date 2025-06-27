@@ -25,7 +25,7 @@ import org.apache.spark.sql.delta.hooks.AutoCompactType
 import org.apache.spark.sql.delta.metering.DeltaLogging
 import org.apache.spark.sql.delta.sources.DeltaSQLConf
 import org.apache.spark.sql.delta.stats.{DataSkippingReader, StatisticsCollection}
-import org.apache.spark.sql.delta.util.JsonUtils
+import org.apache.spark.sql.delta.util.{DeltaSqlParserUtils, JsonUtils}
 
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.catalyst.util.{DateTimeConstants, IntervalUtils}
@@ -46,8 +46,14 @@ case class DeltaConfig[T](
    * alternate keys, returning defaultValue if none match.
    */
   def fromMetaData(metadata: Metadata): T = {
+    fromMap(metadata.configuration)
+  }
+
+  def fromMap(configs: Map[String, String]): T = {
     for (usedKey <- key +: alternateKeys) {
-      metadata.configuration.get(usedKey).map { value => return fromString(value) }
+      configs.get(usedKey).map { value =>
+        return fromString(value)
+      }
     }
     fromString(defaultValue)
   }
@@ -137,7 +143,7 @@ trait DeltaConfigsBase extends DeltaLogging {
    */
   val sqlConfPrefix = "spark.databricks.delta.properties.defaults."
 
-  private val entries = new HashMap[String, DeltaConfig[_]]
+  private[delta] val entries = new HashMap[String, DeltaConfig[_]]
 
   protected def buildConfig[T](
       key: String,
@@ -594,7 +600,7 @@ trait DeltaConfigsBase extends DeltaLogging {
     "dataSkippingStatsColumns",
     null,
     v => Option(v),
-    vOpt => vOpt.forall(v => StatisticsCollection.parseDeltaStatsColumnNames(v).isDefined),
+    vOpt => vOpt.forall(v => DeltaSqlParserUtils.parseMultipartColumnList(v).isDefined),
     """
       |The dataSkippingStatsColumns parameter is a comma-separated list of case-insensitive column
       |identifiers. Each column identifier can consist of letters, digits, and underscores.
