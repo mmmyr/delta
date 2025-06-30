@@ -229,6 +229,19 @@ public class LogReplay {
     return new ActiveAddFilesIterator(engine, addRemoveIter, dataPath, scanMetrics);
   }
 
+  // TODO: getScanFilesForGivenFileList
+  public CloseableIterator<FilteredColumnarBatch> getScanFilesForGivenFileList(
+      Engine engine, boolean shouldReadStats, Optional<Predicate> checkpointPredicate, ScanMetrics scanMetrics) {
+    final CloseableIterator<ActionWrapper> addRemoveIter =
+        new ActionsIterator(
+            engine,
+            getLogReplayFiles(getLogSegment()), //TODO
+            getAddRemoveReadSchema(shouldReadStats),
+            getAddReadSchema(shouldReadStats),
+            checkpointPredicate);
+    return new ActiveAddFilesIterator(engine, addRemoveIter, dataPath, scanMetrics); //TODO inject hashset
+  }
+
   ////////////////////
   // Helper Methods //
   ////////////////////
