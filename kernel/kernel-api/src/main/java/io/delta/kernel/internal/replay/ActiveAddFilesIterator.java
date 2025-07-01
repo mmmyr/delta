@@ -78,6 +78,8 @@ public class ActiveAddFilesIterator implements CloseableIterator<FilteredColumna
    */
   private ScanMetrics metrics;
 
+  private final Optional<ColumnarBatch> logreplayStates;
+
   ActiveAddFilesIterator(
       Engine engine, CloseableIterator<ActionWrapper> iter, Path tableRoot, ScanMetrics metrics) {
     this.engine = engine;
@@ -87,6 +89,20 @@ public class ActiveAddFilesIterator implements CloseableIterator<FilteredColumna
     this.addFilesFromJson = new HashSet<>();
     this.next = Optional.empty();
     this.metrics = metrics;
+    this.logreplayStates = Optional.empty();
+  }
+
+  ActiveAddFilesIterator(
+      Engine engine, CloseableIterator<ActionWrapper> iter, Path tableRoot, ScanMetrics metrics, ColumnarBatch logreplayStates) {
+    this.engine = engine;
+    this.tableRoot = tableRoot;
+    this.iter = iter;
+    this.next = Optional.empty();
+    this.metrics = metrics;
+    this.logreplayStates = Optional.of(logreplayStates);
+    //TODO: unpack ColumnarBatch & inject two hashsets here
+    this.tombstonesFromJson = new HashSet<>();
+    this.addFilesFromJson = new HashSet<>();
   }
 
   @Override

@@ -229,17 +229,19 @@ public class LogReplay {
     return new ActiveAddFilesIterator(engine, addRemoveIter, dataPath, scanMetrics);
   }
 
-  // TODO: getScanFilesForGivenFileList
-  public CloseableIterator<FilteredColumnarBatch> getScanFilesForGivenFileList(
-      Engine engine, boolean shouldReadStats, Optional<Predicate> checkpointPredicate, ScanMetrics scanMetrics) {
+  // TODO: getScanFilesForFileList -> file list can be of JSON or CP file list
+  public CloseableIterator<FilteredColumnarBatch> getScanFilesForFileList(
+      Engine engine, boolean shouldReadStats, Optional<Predicate> checkpointPredicate,
+      ScanMetrics scanMetrics, List<FileStatus> fileList, ColumnarBatch logReplayStates) {
     final CloseableIterator<ActionWrapper> addRemoveIter =
         new ActionsIterator(
             engine,
-            getLogReplayFiles(getLogSegment()), //TODO
+            fileList,
             getAddRemoveReadSchema(shouldReadStats),
             getAddReadSchema(shouldReadStats),
             checkpointPredicate);
-    return new ActiveAddFilesIterator(engine, addRemoveIter, dataPath, scanMetrics); //TODO inject hashset
+    //TODO inject hashset
+    return new ActiveAddFilesIterator(engine, addRemoveIter, dataPath, scanMetrics, logReplayStates);
   }
 
   ////////////////////

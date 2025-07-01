@@ -156,6 +156,7 @@ public class ScanImpl implements Scan {
       // Get active AddFiles via log replay
       // If there is a partition predicate, construct a predicate to prune checkpoint files
       // while constructing the table state.
+      //TODO: do we want to expose LogReplay class?
       CloseableIterator<FilteredColumnarBatch> scanFileIter =
           logReplay.getAddFilesAsColumnarBatches(
               engine,
@@ -183,6 +184,26 @@ public class ScanImpl implements Scan {
       reportReporter.reportError(e);
       throw e;
     }
+  }
+
+  //TODO: get Scan Files from JSON
+  public CloseableIterator<FilteredColumnarBatch> getScanFilesFromJSON() {
+
+  }
+
+  //TODO: get two hashsets
+  public ColumnarBatch getLogReplayStates() {
+
+  }
+
+  //TODO: get two hashsets
+  public CloseableIterator<FilteredColumnarBatch> getLogSegmentCheckpointFiles() {
+    return logReplay.
+  }
+
+  //TODO: get two hashsets
+  public CloseableIterator<FilteredColumnarBatch> getScanFileFromCheckpointList() {
+
   }
 
   @Override
