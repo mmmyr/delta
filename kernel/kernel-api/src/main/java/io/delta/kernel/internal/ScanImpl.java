@@ -186,26 +186,6 @@ public class ScanImpl implements Scan {
     }
   }
 
-  //TODO: get Scan Files from JSON
-  public CloseableIterator<FilteredColumnarBatch> getScanFilesFromJSON() {
-
-  }
-
-  //TODO: get two hashsets
-  public ColumnarBatch getLogReplayStates() {
-
-  }
-
-  //TODO: get two hashsets
-  public CloseableIterator<FilteredColumnarBatch> getLogSegmentCheckpointFiles() {
-    return logReplay.
-  }
-
-  //TODO: get two hashsets
-  public CloseableIterator<FilteredColumnarBatch> getScanFileFromCheckpointList() {
-
-  }
-
   @Override
   public Row getScanState(Engine engine) {
     // Physical equivalent of the logical read schema.
@@ -236,6 +216,26 @@ public class ScanImpl implements Scan {
         physicalReadSchema.toJson(),
         physicalDataReadSchema.toJson(),
         dataPath.toUri().toString());
+  }
+
+  @Override
+  public CloseableIterator<FilteredColumnarBatch> getScanFilesFromJSON(Engine engine, boolean shouldReadStats) {
+    return logReplay.getScanFilesForJSON(engine, shouldReadStats, predicate, scanMetrics);
+  }
+
+  @Override
+  public ColumnarBatch getLogReplayStates() {
+    return null;
+  }
+
+  @Override
+  public List<Row> getLogSegmentCheckpointFiles() {
+    return
+  }
+
+  @Override
+  public CloseableIterator<FilteredColumnarBatch> getScanFileFromCheckpointList(List<Row> checkpoints) {
+    return null;
   }
 
   @Override

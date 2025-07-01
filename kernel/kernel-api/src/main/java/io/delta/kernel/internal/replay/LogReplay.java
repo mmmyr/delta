@@ -229,19 +229,18 @@ public class LogReplay {
     return new ActiveAddFilesIterator(engine, addRemoveIter, dataPath, scanMetrics);
   }
 
-  // TODO: getScanFilesForFileList -> file list can be of JSON or CP file list
-  public CloseableIterator<FilteredColumnarBatch> getScanFilesForFileList(
+  // TODO: getScanFilesForFileList -> file list can be of JSON or CP file list or combined file list
+  public CloseableIterator<FilteredColumnarBatch> getScanFilesForJSON(
       Engine engine, boolean shouldReadStats, Optional<Predicate> checkpointPredicate,
-      ScanMetrics scanMetrics, List<FileStatus> fileList, ColumnarBatch logReplayStates) {
+      ScanMetrics scanMetrics) {
     final CloseableIterator<ActionWrapper> addRemoveIter =
         new ActionsIterator(
             engine,
-            fileList,
+            getLogReplayJSONFiles(getLogSegment()),
             getAddRemoveReadSchema(shouldReadStats),
             getAddReadSchema(shouldReadStats),
             checkpointPredicate);
-    //TODO inject hashset
-    return new ActiveAddFilesIterator(engine, addRemoveIter, dataPath, scanMetrics, logReplayStates);
+    return new ActiveAddFilesIterator(engine, addRemoveIter, dataPath, scanMetrics);
   }
 
   ////////////////////
@@ -266,6 +265,11 @@ public class LogReplay {
     } else {
       return logSegment.allLogFilesReversed();
     }
+  }
+
+  private List<FileStatus> getLogReplayJSONFiles(LogSegment logSegment) {
+    //TODO: get a file list of all JSONs in logSegment
+    return logSegment.getDeltas();
   }
 
   private Lazy<Tuple2<Protocol, Metadata>> createLazyProtocolAndMetadata(

@@ -32,7 +32,10 @@ import io.delta.kernel.internal.util.Tuple2;
 import io.delta.kernel.types.StructField;
 import io.delta.kernel.types.StructType;
 import io.delta.kernel.utils.CloseableIterator;
+import io.delta.kernel.utils.FileStatus;
+
 import java.io.IOException;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -116,6 +119,18 @@ public interface Scan {
    * @return Scan state in {@link Row} format.
    */
   Row getScanState(Engine engine);
+
+  //TODO: return iterator of ScanFiles in the JSON file list
+  public CloseableIterator<FilteredColumnarBatch> getScanFilesFromJSON();
+
+  //TODO: return info about two hashsets
+  public ColumnarBatch getLogReplayStates();
+
+  // TODO: return list of log segment files (in ScanFileRow format)
+  public List<Row> getLogSegmentCheckpointFiles();
+
+  //TODO: return iterator of ScanFiles in the given checkpoint list
+  public CloseableIterator<FilteredColumnarBatch> getScanFileFromCheckpointList(List<Row> checkpoints);
 
   /**
    * Transform the physical data read from the table data file into the logical data that expected
