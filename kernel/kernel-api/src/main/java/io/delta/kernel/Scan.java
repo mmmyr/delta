@@ -126,6 +126,7 @@ public interface Scan {
   //TODO: return info about two hashsets
   public ColumnarBatch getLogReplayStates();
 
+
   // TODO: return list of log segment files (in ScanFileRow format)
   public List<Row> getLogSegmentCheckpointFiles();
 
